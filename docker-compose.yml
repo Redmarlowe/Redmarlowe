@@ -1,0 +1,101 @@
+## IP Pihole:
+# 192.168.1.30
+
+# Ip PiHole-Kids
+# 192.168.1.31
+
+version: "3"
+
+networks:
+  dns_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+services:
+  pihole-adult:
+    container_name: pihole
+    hostname: pihole
+    image: pihole/pihole:latest
+    networks:
+      dns_net:
+        ipv4_address: 172.20.0.6
+    ports:
+      - "192.168.1.30:53:53/tcp"
+      - "192.168.1.30:53:53/udp"
+      - "192.168.1.30:80:80/tcp"
+      - "192.168.1.30:443:443/tcp"
+    environment:
+      - "TZ=Europe/Berlin"
+      - "WEBPASSWORD=<YOUR PASSWORD>"
+      - "DNS1=172.20.0.7#5053"
+      - "DNS2=no"
+    volumes:
+      - "/home/<YOUR USER>/pihole/etc-pihole/:/etc/pihole/"
+      - "/home/<YOUR USER>/pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/"
+    restart: unless-stopped
+
+  # second piHole for Kids
+  # pihole-kids:
+  #   container_name: pihole-kids
+  #   hostname: pihole-kids
+  #   image: pihole/pihole:latest
+  #   networks:
+  #     dns_net:
+  #       ipv4_address: 172.20.0.5
+  #   ports:
+  #     - "192.168.1.31:53:53/tcp"
+  #     - "192.168.1.31:53:53/udp"
+  #     - "192.168.1.31:80:80/tcp"
+  #     - "192.168.1.31:443:443/tcp"
+  #   environment:
+  #     - 'TZ=Europe/Berlin'
+  #     - 'WEBPASSWORD=<YOUR PASSWORD>'
+  #     - 'DNS1=172.20.0.7#5053'
+  #     - 'DNS2=no'
+  #   volumes:
+  #     - '/home/<YOUR USER>/pihole/etc-pihole-kids/:/etc/pihole/'
+  #     - '/home/<YOUR USER>/pihole/etc-dnsmasq.d-kids:/etc/dnsmasq.d/'
+  #   restart: unless-stopped
+
+  unbound:
+    container_name: unbound
+    image: mvance/unbound-rpi:latest
+    networks:
+      dns_net:
+        ipv4_address: 172.20.0.7
+    volumes:
+      - /home/<YOUR USER>/unbound:/opt/unbound/etc/unbound
+    ports:
+      - "5053:5053/tcp"
+      - "5053:5053/udp"
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+## SECOND IP for Raspberry
+## 192.168.1.31 => piHole-KIDS
+
+##EDIT THIS IF YOU WANT SECOND-Pihole in:
+##/etc/network/interfaces.d/eth0-subs -> insert below or  make new file
+## put this in teh etho-subs
+
+## START insert>
+#auto eth0:1
+#allow-hotplug eth0:1
+#iface eth0:1 inet static
+#    vlan-raw-device eth0
+#    address 192.168.1.31
+#    netmask 255.255.255.0
+#    gateway 192.168.1.1
+## < END of insert
+#
+## If you want more IPS ...
+##auto eth0:2
+##allow-hotplug eth0:2
+##iface eth0:2 inet static
+##    vlan-raw-device eth0
+##    address 192.168.1.xxxxx
+##    netmask 255.255.255.0
+##    gateway 192.168.1.1
+
